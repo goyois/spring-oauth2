@@ -1,34 +1,40 @@
 package spring.oauth2.config.auth;
 
+
+// 시큐리티가 /login 주소 요청이 오면 낚아채서 로그인을 진행
+// 로그인을 진행이 완료가 되면 시큐리티 세션을 만듬 (Security ContextHolder)
+// 오브젝트 => Authentication 타입 객체
+// Authentication 안에 User 정보가 있어야됨
+// User 오브젝트 타입 -> UserDetails 타입 객체
+
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import spring.oauth2.entity.User;
 
-import java.util.ArrayList;
+import java.util.ArrayDeque;
 import java.util.Collection;
-import java.util.Map;
 
-public class PrincipalDetails implements UserDetails, OAuth2User {
+//Security Session -> Authentication -> userDetails(PrincipalDetails)
+public class PrincipalDetails implements UserDetails {
 
 
-    private static final long serialVersionUID = 1L;
     private User user;
-    private Map<String, Object> attributes;
 
-    // 일반 시큐리티 로그인시 사용
     public PrincipalDetails(User user) {
         this.user = user;
     }
 
-    // OAuth2.0 로그인시 사용
-    public PrincipalDetails(User user, Map<String, Object> attributes) {
-        this.user = user;
-        this.attributes = attributes;
-    }
-
-    public User getUser() {
-        return user;
+    //해당 User의 권한을 리턴하는 곳
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        Collection<GrantedAuthority> collect = new ArrayDeque<>();
+        collect.add(new GrantedAuthority() {
+            @Override
+            public String getAuthority() {
+                return user.getRole();
+            }
+        });
+        return collect;
     }
 
     @Override
@@ -60,24 +66,4 @@ public class PrincipalDetails implements UserDetails, OAuth2User {
     public boolean isEnabled() {
         return true;
     }
-
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        Collection<GrantedAuthority> collet = new ArrayList<GrantedAuthority>();
-        collet.add(()->{ return user.getRole();});
-        return collet;
-    }
-
-    // 리소스 서버로 부터 받는 회원정보
-    @Override
-    public Map<String, Object> getAttributes() {
-        return attributes;
-    }
-
-    // User의 PrimaryKey
-    @Override
-    public String getName() {
-        return user.getId()+"";
-    }
-
 }
